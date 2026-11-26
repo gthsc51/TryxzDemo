@@ -1,0 +1,691 @@
+--[[
+    TryxzLib v3.9 -- Showcase script
+    Author: gthsc51
+    Repository: https://github.com/gthsc51/TryxzLib-
+]]
+
+local TryxzLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/gthsc51/TryxzLib-/refs/heads/main/Library/Tryxz?t=" .. tostring(os.time())))()
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+
+local State = {
+    WalkEnabled = false,
+    WalkSpeed = 16,
+    JumpEnabled = false,
+    JumpPower = 50,
+    SpinEnabled = false,
+    SpinSpeed = 6,
+    NoclipEnabled = false,
+    TargetFilter = "",
+    SelectedBodyPart = "HumanoidRootPart",
+    SelectedMode = "Balanced",
+    ActiveModules = {"ESP Boxes", "Name Tags", "Distance"},
+    HighlightColor = Color3.fromRGB(115, 85, 255),
+    AuraColor = Color3.fromRGB(56, 152, 255),
+    CustomMessage = "TryxzLib v3.9 Active!",
+    RepeatCount = 1,
+    MeterValue = 15,
+    SavedCheckpoint = nil
+}
+
+local Window = TryxzLib:CreateWindow({
+    Title = "TryxzHub",
+    Subtitle = "v3.9 | 8-Tab Mega Showcase",
+    Icon = "rbxassetid://10734950309",
+    Theme = "Obsidian",
+    CustomThemes = {
+        ["Midnight Gold"] = {
+            Background = Color3.fromRGB(14, 15, 22),
+            Sidebar = Color3.fromRGB(20, 22, 32),
+            Element = Color3.fromRGB(28, 31, 44),
+            ElementHover = Color3.fromRGB(36, 40, 56),
+            GrayTranslucent = Color3.fromRGB(48, 52, 72),
+            Accent = Color3.fromRGB(255, 195, 55),
+            AccentHover = Color3.fromRGB(255, 210, 85),
+            Text = Color3.fromRGB(248, 245, 236),
+            SubText = Color3.fromRGB(178, 172, 156),
+            Divider = Color3.fromRGB(64, 68, 90)
+        },
+        ["Cyber Mint"] = {
+            Background = Color3.fromRGB(12, 20, 22),
+            Sidebar = Color3.fromRGB(17, 27, 30),
+            Element = Color3.fromRGB(23, 37, 41),
+            ElementHover = Color3.fromRGB(30, 48, 53),
+            GrayTranslucent = Color3.fromRGB(38, 60, 66),
+            Accent = Color3.fromRGB(45, 235, 185),
+            AccentHover = Color3.fromRGB(75, 248, 202),
+            Text = Color3.fromRGB(236, 250, 246),
+            SubText = Color3.fromRGB(152, 184, 178),
+            Divider = Color3.fromRGB(45, 70, 76)
+        }
+    },
+    Profile = true,
+    Stats = true,
+    SearchBar = true,
+    Haptics = true,
+    Blur = {
+        Enabled = true,
+        Size = 14
+    },
+    SaveConfig = {
+        Enabled = true,
+        SaveKey = false,
+        DefaultProfile = "default",
+        Folder = "TryxzLibConfigs",
+        FileName = "TryxzHub_Mega_V39"
+    },
+    Sounds = {
+        Enabled = true,
+        Preset = "Soft Pop",
+        Volume = 0.5,
+        Custom = {
+            ["TeleportWhoosh"] = "rbxassetid://9119713951",
+            ["SuccessBell"] = "rbxassetid://4590662766",
+            ["AlertPing"] = "rbxassetid://4590657391"
+        },
+        Packs = {
+            ["Retro Arcade"] = {
+                Click = "rbxassetid://12221967",
+                Hover = "rbxassetid://12221976",
+                Toggle = "rbxassetid://12221967",
+                Notify = "rbxassetid://12222030",
+                Success = "rbxassetid://12222253",
+                Error = "rbxassetid://12221990"
+            }
+        }
+    },
+    ToggleKey = Enum.KeyCode.RightControl,
+    KeySystem = {
+        Enabled = true,
+        Title = "TryxzHub Key System",
+        Icon = "rbxassetid://10723407389",
+        Note = "Enter key 123 or gthsc51, or tap Copy Key Link.",
+        Info = {
+            Title = "TryxzLib v3.9 Showcase",
+            Content = "8 tabs, sub-tabs, 8 full themes, Gear keybinds, clean dropdown icons, and bottom drag bar."
+        },
+        Keys = {"123", "gthsc51"},
+        ButtonText = "Verify & Enter",
+        GetKeyLink = "https://github.com/gthsc51/TryxzLib-"
+    }
+})
+
+local Tab1 = Window:CreateTab("Player Movement", "rbxassetid://10747373176")
+
+Tab1:AddSection("Live Telemetry", "rbxassetid://10723407389")
+
+local MovementStatusLbl = Tab1:AddLabel("WalkSpeed: OFF (16) | JumpPower: OFF (50)")
+
+Tab1:AddParagraph({
+    Title = "Movement & Keybind Tips",
+    Icon = "rbxassetid://10734950309",
+    Content = "• WalkSpeed and JumpPower apply continuously while active.\n• Any bindable control can also be assigned inside Settings (⚙) -> Function Keybinds."
+})
+
+local SpeedGauge = Tab1:AddProgressBar({
+    Name = "Speed Capacity Gauge",
+    Max = 100,
+    Default = State.MeterValue,
+    Tooltip = "Synced with WalkSpeed slider (16 to 250)"
+})
+
+Tab1:AddDivider("Speed & Jump")
+
+local WalkToggle = Tab1:AddToggle({
+    Name = "Enable WalkSpeed",
+    Icon = "rbxassetid://10734950309",
+    Flag = "T1_WalkEnabled",
+    Keybind = Enum.KeyCode.V,
+    Default = false,
+    Tooltip = "Toggle custom WalkSpeed",
+    Callback = function(v)
+        State.WalkEnabled = v
+        MovementStatusLbl:Set(string.format("WalkSpeed: %s (%d) | JumpPower: %s (%d)", v and "ON" or "OFF", State.WalkSpeed, State.JumpEnabled and "ON" or "OFF", State.JumpPower))
+        if not v and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.WalkSpeed = 16
+        end
+    end
+})
+
+Tab1:AddSlider({
+    Name = "WalkSpeed Value",
+    Flag = "T1_WalkSpeed",
+    Min = 16,
+    Max = 250,
+    Default = 16,
+    KeyStep = 25,
+    Keybind = Enum.KeyCode.B,
+    Tooltip = "Adjust WalkSpeed (steps +25 on B)",
+    Callback = function(val)
+        State.WalkSpeed = val
+        State.MeterValue = math.floor(((val - 16) / (250 - 16)) * 100)
+        SpeedGauge:Set(State.MeterValue)
+        MovementStatusLbl:Set(string.format("WalkSpeed: %s (%d) | JumpPower: %s (%d)", State.WalkEnabled and "ON" or "OFF", State.WalkSpeed, State.JumpEnabled and "ON" or "OFF", State.JumpPower))
+    end
+})
+
+local JumpToggle = Tab1:AddToggle({
+    Name = "Enable JumpPower",
+    Icon = "rbxassetid://10709790948",
+    Flag = "T1_JumpEnabled",
+    Default = false,
+    Tooltip = "Toggle custom JumpPower",
+    Callback = function(v)
+        State.JumpEnabled = v
+        MovementStatusLbl:Set(string.format("WalkSpeed: %s (%d) | JumpPower: %s (%d)", State.WalkEnabled and "ON" or "OFF", State.WalkSpeed, v and "ON" or "OFF", State.JumpPower))
+        if not v and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.UseJumpPower = true
+            LocalPlayer.Character.Humanoid.JumpPower = 50
+        end
+    end
+})
+
+Tab1:AddSlider({
+    Name = "JumpPower Value",
+    Flag = "T1_JumpPower",
+    Min = 50,
+    Max = 300,
+    Default = 50,
+    KeyStep = 25,
+    Tooltip = "Adjust JumpPower from 50 to 300",
+    Callback = function(val)
+        State.JumpPower = val
+        MovementStatusLbl:Set(string.format("WalkSpeed: %s (%d) | JumpPower: %s (%d)", State.WalkEnabled and "ON" or "OFF", State.WalkSpeed, State.JumpEnabled and "ON" or "OFF", State.JumpPower))
+    end
+})
+
+Tab1:AddKeybind({
+    Name = "Quick WalkSpeed Hotkey",
+    Flag = "T1_QuickWalkKey",
+    Default = Enum.KeyCode.G,
+    Tooltip = "Press key to flip WalkSpeed toggle",
+    Callback = function()
+        WalkToggle:Set(not State.WalkEnabled)
+        TryxzLib:Notify({Title = "Hotkey", Text = "WalkSpeed switched via hotkey.", Duration = 2})
+    end
+})
+
+Tab1:AddDivider()
+
+Tab1:AddButton({
+    Name = "Reset Character (3s Cooldown)",
+    Icon = "rbxassetid://10734933222",
+    Flag = "T1_ResetBind",
+    Keybind = Enum.KeyCode.R,
+    Cooldown = 3,
+    Tooltip = "Opens a confirmation dialog with a 3s cooldown",
+    Callback = function()
+        TryxzLib:Dialog({
+            Title = "Reset Character",
+            Icon = "rbxassetid://10734933222",
+            Content = "Are you sure you want to respawn your character?",
+            ConfirmText = "Respawn",
+            CancelText = "Cancel",
+            OnConfirm = function()
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                    LocalPlayer.Character.Humanoid.Health = 0
+                end
+            end
+        })
+    end
+})
+
+local Tab2 = Window:CreateTab("Themes & Palettes", "rbxassetid://10734950309")
+
+Tab2:AddSection("Full UI Theme Switcher", "rbxassetid://10734950309")
+
+local ThemeInfoLbl = Tab2:AddLabel("Current Theme: Obsidian")
+
+Tab2:AddParagraph({
+    Title = "Full Palette vs. Custom Accent",
+    Icon = "rbxassetid://10723407389",
+    Content = "Selecting a theme changes background, sidebar, cards, borders, and accent together. You can also fine-tune the accent color below."
+})
+
+Tab2:AddDropdown({
+    Name = "Choose Theme",
+    Icon = "rbxassetid://10734950309",
+    Flag = "T2_ThemeDrop",
+    Options = {"Obsidian", "Crimson Night", "Abyss Ocean", "Emerald Forest", "Solar Amber", "Sakura Dusk", "Midnight Gold", "Cyber Mint"},
+    OptionIcons = {
+        ["Obsidian"] = "💜",
+        ["Crimson Night"] = "❤️",
+        ["Abyss Ocean"] = "💙",
+        ["Emerald Forest"] = "💚",
+        ["Solar Amber"] = "💛",
+        ["Sakura Dusk"] = "🩷",
+        ["Midnight Gold"] = "✨",
+        ["Cyber Mint"] = "💎"
+    },
+    Default = "Obsidian",
+    Tooltip = "Apply a full theme palette",
+    Callback = function(selectedTheme)
+        TryxzLib:SetTheme(selectedTheme)
+        ThemeInfoLbl:Set("Current Theme: " .. tostring(selectedTheme))
+    end
+})
+
+Tab2:AddDivider("Custom Accent & Quick Presets")
+
+Tab2:AddColorPicker({
+    Name = "Custom Accent Override",
+    Flag = "T2_CustomAccent",
+    Default = Color3.fromRGB(115, 85, 255),
+    Tooltip = "Pick any custom accent color",
+    Callback = function(col)
+        TryxzLib:SetAccent(col)
+    end
+})
+
+Tab2:AddButton({
+    Name = "Quick Switch: Abyss Ocean",
+    Icon = "rbxassetid://10709790948",
+    Tooltip = "Applies Abyss Ocean theme immediately",
+    Callback = function()
+        TryxzLib:SetTheme("Abyss Ocean")
+        ThemeInfoLbl:Set("Current Theme: Abyss Ocean")
+        TryxzLib:Notify({Title = "Theme Applied", Text = "Switched to Abyss Ocean.", Duration = 2.5})
+    end
+})
+
+Tab2:AddButton({
+    Name = "Quick Switch: Crimson Night",
+    Icon = "rbxassetid://10734933222",
+    Tooltip = "Applies Crimson Night theme immediately",
+    Callback = function()
+        TryxzLib:SetTheme("Crimson Night")
+        ThemeInfoLbl:Set("Current Theme: Crimson Night")
+        TryxzLib:Notify({Title = "Theme Applied", Text = "Switched to Crimson Night.", Duration = 2.5})
+    end
+})
+
+local Tab3 = Window:CreateTab("Combat & Aim", "rbxassetid://10723356507")
+
+local SubAim = Tab3:AddSubTab("Hitbox & Mode")
+local SubTeleport = Tab3:AddSubTab("Player Teleport")
+
+SubAim:AddSection("Targeting Configuration", "rbxassetid://10723356507")
+
+SubAim:AddDropdown({
+    Name = "Target Body Part",
+    Icon = "rbxassetid://10723356507",
+    Flag = "T3_BodyPart",
+    Options = {"Head", "HumanoidRootPart", "UpperTorso", "Torso"},
+    OptionIcons = {
+        ["Head"] = "rbxassetid://10747373176",
+        ["HumanoidRootPart"] = "rbxassetid://10734950309",
+        ["UpperTorso"] = "rbxassetid://10709790948",
+        ["Torso"] = "rbxassetid://10734933222"
+    },
+    Default = "HumanoidRootPart",
+    Tooltip = "Select target part with icon badges",
+    Callback = function(part)
+        State.SelectedBodyPart = part
+    end
+})
+
+SubAim:AddDropdown({
+    Name = "Targeting Mode",
+    Icon = "rbxassetid://10734950309",
+    Flag = "T3_TargetMode",
+    Options = {"Closest to Crosshair", "Nearest Distance", "Balanced"},
+    Default = "Balanced",
+    Callback = function(mode)
+        State.SelectedMode = mode
+    end
+})
+
+SubAim:AddMultiDropdown({
+    Name = "Active ESP Modules",
+    Icon = "rbxassetid://10734933222",
+    Flag = "T3_ESPModules",
+    Options = {"ESP Boxes", "Name Tags", "Distance", "Health Bar", "Skeleton"},
+    OptionIcons = {
+        ["ESP Boxes"] = "rbxassetid://10723356507",
+        ["Name Tags"] = "rbxassetid://10747373176",
+        ["Distance"] = "rbxassetid://10734950309",
+        ["Health Bar"] = "rbxassetid://10709790948",
+        ["Skeleton"] = "rbxassetid://10734933222"
+    },
+    Default = {"ESP Boxes", "Name Tags", "Distance"},
+    Callback = function(list)
+        State.ActiveModules = list
+    end
+})
+
+SubAim:AddColorPicker({
+    Name = "ESP Box Color",
+    Flag = "T3_ESPColor",
+    Default = State.HighlightColor,
+    Callback = function(col)
+        State.HighlightColor = col
+    end
+})
+
+SubTeleport:AddSection("Teleport Tools", "rbxassetid://10734950309")
+
+SubTeleport:AddInput({
+    Name = "Player Name Filter",
+    Flag = "T3_PlayerFilter",
+    Placeholder = "Type part of username...",
+    Default = "",
+    Callback = function(txt)
+        State.TargetFilter = txt
+    end
+})
+
+SubTeleport:AddButton({
+    Name = "Teleport Behind Target",
+    Icon = "rbxassetid://10734950309",
+    Sound = "TeleportWhoosh",
+    Cooldown = 2,
+    Callback = function()
+        if State.TargetFilter == "" then
+            TryxzLib:Notify({Title = "Empty Filter", Text = "Enter a player name first.", Duration = 2.5, Sound = "Error"})
+            return
+        end
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer and string.find(string.lower(plr.Name), string.lower(State.TargetFilter), 1, true) then
+                if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character then
+                    LocalPlayer.Character:PivotTo(plr.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3))
+                    TryxzLib:Notify({Title = "Teleported", Text = "Moved near " .. plr.Name, Duration = 2.5})
+                    return
+                end
+            end
+        end
+        TryxzLib:Notify({Title = "No Match", Text = "Player not found in server.", Duration = 2.5, Sound = "Error"})
+    end
+})
+
+SubTeleport:AddButton({
+    Name = "Save Current Position",
+    Icon = "rbxassetid://10709790948",
+    Callback = function()
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            State.SavedCheckpoint = LocalPlayer.Character.HumanoidRootPart.CFrame
+            TryxzLib:Notify({Title = "Checkpoint Saved", Text = "Position stored for this session.", Duration = 2.5})
+        end
+    end
+})
+
+SubTeleport:AddButton({
+    Name = "Return to Saved Position",
+    Icon = "rbxassetid://10734933222",
+    Cooldown = 1.5,
+    Callback = function()
+        if State.SavedCheckpoint and LocalPlayer.Character then
+            LocalPlayer.Character:PivotTo(State.SavedCheckpoint)
+            TryxzLib:Notify({Title = "Returned", Text = "Teleported to saved checkpoint.", Duration = 2.5})
+        else
+            TryxzLib:Notify({Title = "No Checkpoint", Text = "Save a position first.", Duration = 2.5, Sound = "Error"})
+        end
+    end
+})
+
+local Tab4 = Window:CreateTab("World & Visuals", "rbxassetid://10709790948")
+
+Tab4:AddSection("Character & World Modifiers", "rbxassetid://10709790948")
+
+Tab4:AddToggle({
+    Name = "Spin Character",
+    Icon = "rbxassetid://10734933222",
+    Flag = "T4_SpinEnabled",
+    Keybind = Enum.KeyCode.Z,
+    Default = false,
+    Callback = function(v)
+        State.SpinEnabled = v
+    end
+})
+
+Tab4:AddSlider({
+    Name = "Spin Angular Speed",
+    Flag = "T4_SpinSpeed",
+    Min = 1,
+    Max = 30,
+    Default = 6,
+    KeyStep = 3,
+    Callback = function(val)
+        State.SpinSpeed = val
+    end
+})
+
+Tab4:AddToggle({
+    Name = "Noclip (Character Parts)",
+    Icon = "rbxassetid://10734950309",
+    Flag = "T4_Noclip",
+    Default = false,
+    Callback = function(v)
+        State.NoclipEnabled = v
+    end
+})
+
+Tab4:AddDivider("Visual Colors")
+
+Tab4:AddColorPicker({
+    Name = "Aura Accent Color",
+    Flag = "T4_AuraColor",
+    Default = State.AuraColor,
+    Callback = function(col)
+        State.AuraColor = col
+    end
+})
+
+Tab4:AddButton({
+    Name = "Reset Camera Subject",
+    Icon = "rbxassetid://10723407389",
+    Callback = function()
+        if Workspace.CurrentCamera and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            Workspace.CurrentCamera.CameraSubject = LocalPlayer.Character.Humanoid
+            TryxzLib:Notify({Title = "Camera Reset", Text = "Camera locked back to character.", Duration = 2})
+        end
+    end
+})
+
+RunService.Stepped:Connect(function()
+    if State.NoclipEnabled and LocalPlayer.Character then
+        for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    end
+end)
+
+RunService.RenderStepped:Connect(function(dt)
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChild("Humanoid")
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if hum then
+        if State.WalkEnabled then hum.WalkSpeed = State.WalkSpeed end
+        if State.JumpEnabled then
+            hum.UseJumpPower = true
+            hum.JumpPower = State.JumpPower
+        end
+    end
+    if State.SpinEnabled and hrp then
+        hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(State.SpinSpeed * 60 * dt), 0)
+    end
+end)
+
+local Tab5 = Window:CreateTab("Audio Studio", "rbxassetid://10723407389")
+
+Tab5:AddSection("Sound Packs & Live Preview", "rbxassetid://10723407389")
+
+local SoundLogLbl = Tab5:AddLabel("Sound Pack: Soft Pop | Custom IDs Ready")
+
+Tab5:AddDropdown({
+    Name = "Select Sound Pack",
+    Icon = "rbxassetid://10723407389",
+    Flag = "T5_SoundPack",
+    Options = {"Soft Pop", "Mechanical", "Bubble", "Cyber", "Retro Arcade"},
+    Default = "Soft Pop",
+    Callback = function(pack)
+        TryxzLib:SetSoundPreset(pack)
+        SoundLogLbl:Set("Sound Pack: " .. tostring(pack))
+        TryxzLib:PlaySound("Click")
+    end
+})
+
+Tab5:AddInput({
+    Name = "Custom Sound Asset ID",
+    Flag = "T5_CustomSoundID",
+    Placeholder = "Enter numeric ID (e.g. 6895079853)",
+    Numeric = true,
+    Tooltip = "Plays the sound immediately when submitted",
+    Callback = function(idText)
+        if idText ~= "" then
+            TryxzLib:RegisterSound("CustomTestSound", idText)
+            TryxzLib:PlaySound("CustomTestSound")
+            SoundLogLbl:Set("Playing ID: " .. idText)
+        end
+    end
+})
+
+Tab5:AddDivider("Sound Triggers")
+
+Tab5:AddButton({
+    Name = "Play Teleport Whoosh",
+    Icon = "rbxassetid://10734950309",
+    Sound = "TeleportWhoosh",
+    Callback = function()
+        TryxzLib:Notify({Title = "Audio", Text = "Played TeleportWhoosh.", Duration = 2})
+    end
+})
+
+Tab5:AddButton({
+    Name = "Play Success Bell + Notify",
+    Icon = "rbxassetid://10734933222",
+    Sound = "SuccessBell",
+    Callback = function()
+        TryxzLib:Notify({Title = "Success Bell", Text = "Custom sound triggered with notification.", Duration = 3, Sound = "SuccessBell"})
+    end
+})
+
+local Tab6 = Window:CreateTab("Inputs & Dialogs", "rbxassetid://10734933222")
+
+Tab6:AddSection("Text & Numeric Inputs", "rbxassetid://10734933222")
+
+local MsgPreviewLbl = Tab6:AddLabel("Message: " .. State.CustomMessage)
+
+Tab6:AddInput({
+    Name = "Custom Status Text",
+    Flag = "T6_CustomMsg",
+    Placeholder = "Write your message...",
+    Default = State.CustomMessage,
+    ClearOnFocus = false,
+    Callback = function(txt)
+        State.CustomMessage = txt
+        MsgPreviewLbl:Set("Message: " .. txt)
+    end
+})
+
+Tab6:AddInput({
+    Name = "Repeat Count (Numeric)",
+    Flag = "T6_RepeatNum",
+    Placeholder = "1 - 10",
+    Default = "1",
+    Numeric = true,
+    Callback = function(numStr)
+        State.RepeatCount = math.clamp(tonumber(numStr) or 1, 1, 10)
+    end
+})
+
+Tab6:AddDivider("Notifications & Confirmation Dialogs")
+
+Tab6:AddButton({
+    Name = "Dispatch Notification",
+    Icon = "rbxassetid://10723407389",
+    Cooldown = 1,
+    Callback = function()
+        TryxzLib:Notify({
+            Title = "Custom Message (x" .. tostring(State.RepeatCount) .. ")",
+            Text = State.CustomMessage,
+            Duration = 3.5
+        })
+    end
+})
+
+Tab6:AddButton({
+    Name = "Open Confirmation Dialog",
+    Icon = "rbxassetid://10734950309",
+    Callback = function()
+        TryxzLib:Dialog({
+            Title = "TryxzLib Dialog Demo",
+            Icon = "rbxassetid://10723407389",
+            Content = "Message: " .. State.CustomMessage .. "\nConfirm to send a confirmation notice.",
+            ConfirmText = "Confirm",
+            CancelText = "Dismiss",
+            OnConfirm = function()
+                TryxzLib:Notify({Title = "Confirmed", Text = "Dialog confirmed!", Duration = 2.5})
+            end,
+            OnCancel = function()
+                TryxzLib:Notify({Title = "Dismissed", Text = "Dialog cancelled.", Duration = 2})
+            end
+        })
+    end
+})
+
+local Tab7 = Window:CreateTab("Keybinds & Config", "rbxassetid://10723407389")
+
+Tab7:AddSection("Configuration & Keybind Management", "rbxassetid://10723407389")
+
+Tab7:AddParagraph({
+    Title = "How Gear (⚙) Keybinds Work",
+    Icon = "rbxassetid://10723407389",
+    Content = "Open the gear icon (⚙) in the top bar and expand 'Function Keybinds' to rebind or clear keys for Toggles, Sliders, and Buttons. Profiles save flags, themes, UI scale, and keybinds."
+})
+
+Tab7:AddKeybind({
+    Name = "Demo Action Keybind",
+    Flag = "T7_DemoKey",
+    Default = Enum.KeyCode.H,
+    Callback = function(key)
+        TryxzLib:Notify({Title = "Keybind [" .. key.Name .. "]", Text = "Demo action key triggered!", Duration = 2.5})
+    end
+})
+
+Tab7:AddButton({
+    Name = "Force Save Current Config",
+    Icon = "rbxassetid://10734950309",
+    Cooldown = 2,
+    Callback = function()
+        Window:Save()
+        TryxzLib:Notify({Title = "Config Saved", Text = "Current profile written to disk.", Duration = 2.5})
+    end
+})
+
+local Tab8 = Window:CreateTab("About TryxzLib", "rbxassetid://10747373176")
+
+Tab8:AddSection("Library Overview", "rbxassetid://10734950309")
+
+Tab8:AddParagraph({
+    Title = "TryxzLib v3.9 by gthsc51",
+    Icon = "rbxassetid://10734950309",
+    Content = "Designed for Roblox executors with smooth TweenService animations, 8 full themes, clean dropdown icon badges, bottom translucent white drag bar, camera blur, and multi-profile saves."
+})
+
+local ShowcaseBar = Tab8:AddProgressBar({
+    Name = "Showcase Readiness",
+    Max = 100,
+    Default = 100,
+    Suffix = "100% Ready"
+})
+
+Tab8:AddDivider("Quick Showcase Actions")
+
+Tab8:AddButton({
+    Name = "Cycle Next Theme",
+    Icon = "rbxassetid://10734933222",
+    Callback = function()
+        local list = {"Obsidian", "Crimson Night", "Abyss Ocean", "Emerald Forest", "Solar Amber", "Sakura Dusk", "Midnight Gold", "Cyber Mint"}
+        local current = string.match(ThemeInfoLbl and "" or "", "")
+        local nextIdx = math.random(1, #list)
+        local chosen = list[nextIdx]
+        TryxzLib:SetTheme(chosen)
+        ShowcaseBar:Set(100, chosen)
+        TryxzLib:Notify({Title = "Theme Cycled", Text = "Now using " .. chosen, Duration = 2.5})
+    end
+})
